@@ -10,13 +10,6 @@ import { UserResolver } from './resolvers/user';
 import Redis from 'ioredis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import { MyContext } from './types';
-
-declare module 'express-session' {
-  export interface SessionData {
-    userId: number;
-  }
-}
 
 const main = async () => {
   // database connection
@@ -27,8 +20,8 @@ const main = async () => {
   const app = express();
 
   // connect redis
-  let RedisStore = connectRedis(session);
-  let redisClient = new Redis();
+  const RedisStore = connectRedis(session);
+  const redisClient = new Redis();
   app.use(
     session({
       name: 'qid',
@@ -54,13 +47,20 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
+
     // resolver can get this context value which is datase value
-    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
+    context: ({ req, res }) => ({ em: orm.em, req, res }),
   });
 
   await apolloServer.start();
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({
+    app,
+    cors: {
+      origin: 'http://localhost:3000',
+      credentials: true,
+    },
+  });
 
   app.listen(4000, () => {
     console.log('server is started at port 4000');

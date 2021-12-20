@@ -39,8 +39,15 @@ class UserResponse {
   user?: User;
 }
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+  // to see all users
+  @Query(() => [User], { nullable: true })
+  async listUsers(@Ctx() { em }: MyContext) {
+    const users = await em.find(User, {});
+    return users;
+  }
+
   // to check login user
   @Query(() => User, { nullable: true })
   async me(@Ctx() { em, req }: MyContext) {
@@ -83,6 +90,8 @@ export class UserResolver {
       username: options.username,
       password: hashedPassword,
     });
+    console.log(user);
+
     try {
       await em.persistAndFlush(user);
     } catch (err) {
@@ -102,6 +111,7 @@ export class UserResolver {
     // store user id session
     // set the cookie on the user
     // keep them logged in
+
     req.session.userId = user._id;
 
     return { user };
