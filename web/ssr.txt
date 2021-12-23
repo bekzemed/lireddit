@@ -1,0 +1,15 @@
+me -> go to the browser http://localhost:3000
+
+-> browser request to the nextjs server
+
+-> nextjs server reqest to graphql server http://localhost:4000/graphql
+
+-> server build the HTML
+
+-> send back to the browser
+
+* we add SSR to dynamic pages
+
+* if one page is SSR(server side rendering) and u navigate to other pages nextjs automatically changes into client side rendering
+
+* to stop one query from running on the server we have to add an object {pause: true}
