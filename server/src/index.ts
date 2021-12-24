@@ -21,12 +21,12 @@ const main = async () => {
 
   // connect redis
   const RedisStore = connectRedis(session);
-  const redisClient = new Redis();
+  const redis = new Redis();
   app.use(
     session({
       name: COOKIE_NAME,
       store: new RedisStore({
-        client: redisClient,
+        client: redis,
         disableTouch: true,
         disableTTL: true,
       }),
@@ -49,7 +49,7 @@ const main = async () => {
     }),
 
     // resolver can get this context value which is datase value
-    context: ({ req, res }) => ({ em: orm.em, req, res }),
+    context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
   });
 
   await apolloServer.start();

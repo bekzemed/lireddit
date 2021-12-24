@@ -1,0 +1,1 @@
+create:migration --> after creating entities u have to run this code to generate table based on the entity u provide
