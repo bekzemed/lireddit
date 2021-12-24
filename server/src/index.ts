@@ -1,6 +1,5 @@
-import { MikroORM } from '@mikro-orm/core';
+import 'reflect-metadata';
 import { COOKIE_NAME, __prod__ } from './constants';
-import mikroConfig from './mikro-orm.config';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
@@ -10,11 +9,21 @@ import { UserResolver } from './resolvers/user';
 import Redis from 'ioredis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
+import { createConnection } from 'typeorm';
+import { Post } from './entities/Post';
+import { User } from './entities/User';
 
 const main = async () => {
-  // database connection
-  const orm = await MikroORM.init(mikroConfig);
-  await orm.getMigrator().up();
+  // typeorm database connection
+  await createConnection({
+    type: 'postgres',
+    database: 'lireddit2',
+    username: 'postgres',
+    password: 'bek',
+    entities: [Post, User],
+    synchronize: true,
+    logging: true,
+  });
 
   // initialize the app
   const app = express();
@@ -49,7 +58,7 @@ const main = async () => {
     }),
 
     // resolver can get this context value which is datase value
-    context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
+    context: ({ req, res }) => ({ req, res, redis }),
   });
 
   await apolloServer.start();
@@ -57,7 +66,7 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      origin: 'http://localhost:3000',
+      // origin: 'http://localhost:3000',
       credentials: true,
     },
   });
