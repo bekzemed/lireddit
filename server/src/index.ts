@@ -12,18 +12,25 @@ import connectRedis from 'connect-redis';
 import { createConnection } from 'typeorm';
 import { Post } from './entities/Post';
 import { User } from './entities/User';
+import path from 'path';
 
+//
 const main = async () => {
   // typeorm database connection
-  await createConnection({
+  const conn = await createConnection({
     type: 'postgres',
     database: 'lireddit2',
     username: 'postgres',
     password: 'bek',
     entities: [Post, User],
+    migrations: [path.join(__dirname, './migrations/*')],
     synchronize: true,
     logging: true,
   });
+  await conn.runMigrations();
+
+  // to delete post in the database
+  // await Post.delete({});
 
   // initialize the app
   const app = express();
@@ -66,7 +73,7 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      origin: 'http://localhost:3000',
+      // origin: 'http://localhost:3000',
       credentials: true,
     },
   });

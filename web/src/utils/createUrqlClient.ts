@@ -1,4 +1,9 @@
-import { dedupExchange, errorExchange, fetchExchange } from 'urql';
+import {
+  dedupExchange,
+  errorExchange,
+  fetchExchange,
+  stringifyVariables,
+} from 'urql';
 import {
   LoginMutation,
   MeQuery,
@@ -7,8 +12,115 @@ import {
   LogoutMutation,
 } from '../generated/graphql';
 import { betterUpdateQuery } from './betterUpdateQuery';
-import { cacheExchange } from '@urql/exchange-graphcache';
+import { cacheExchange, Resolver } from '@urql/exchange-graphcache';
 import Router from 'next/router';
+
+// client side resolver
+export const cursorPagination = (): Resolver => {
+  return (_parent, fieldArgs, cache, info) => {
+    const { parentKey: entityKey, fieldName } = info;
+
+    // console.log(entityKey, fieldName);
+
+    const allFields = cache.inspectFields(entityKey);
+    // console.log(allFields);
+
+    const fieldInfos = allFields.filter(info => info.fieldName === fieldName);
+
+    const size = fieldInfos.length;
+    if (size === 0) {
+      return undefined;
+    }
+
+    // console.log('field args: ', fieldArgs);
+    const fieldKey = `${fieldName}(${stringifyVariables(fieldArgs)})`;
+    const isItInTheCache = cache.resolve(
+      cache.resolve(entityKey, fieldKey) as string,
+      'posts'
+    );
+
+    // we have to tell urql to fetch data from server if there is nothing in the server
+    info.partial = !isItInTheCache; // !! cast to boolean
+    // console.log('field we created: ', isItInTheCache);
+
+    // reading the data from cache and returning it
+    let results: string[] = [];
+    let hasMore = true;
+    fieldInfos.forEach(fi => {
+      const key = cache.resolve(entityKey, fi.fieldKey) as string;
+      const data = cache.resolve(key, 'posts') as string[];
+      const _hasMore = cache.resolve(key, 'hasMore') as boolean;
+
+      if (!_hasMore) {
+        hasMore = _hasMore;
+      }
+      if (results.length === 0) {
+        results.push(...data);
+      } else {
+        results.splice(0, 11);
+        results.push(...data);
+      }
+    });
+
+    return {
+      __typename: 'PaginatedPosts',
+      hasMore,
+      posts: results,
+    };
+
+    // const visited = new Set();
+    // let result: NullArray<string> = [];
+    // let prevOffset: number | null = null;
+
+    // for (let i = 0; i < size; i++) {
+    //   const { fieldKey, arguments: args } = fieldInfos[i];
+    //   if (args === null || !compareArgs(fieldArgs, args)) {
+    //     continue;
+    //   }
+
+    //   const links = cache.resolve(entityKey, fieldKey) as string[];
+    //   const currentOffset = args[cursorArgument];
+
+    //   if (
+    //     links === null ||
+    //     links.length === 0 ||
+    //     typeof currentOffset !== 'number'
+    //   ) {
+    //     continue;
+    //   }
+
+    //   const tempResult: NullArray<string> = [];
+
+    //   for (let j = 0; j < links.length; j++) {
+    //     const link = links[j];
+    //     if (visited.has(link)) continue;
+    //     tempResult.push(link);
+    //     visited.add(link);
+    //   }
+
+    //   if (
+    //     (!prevOffset || currentOffset > prevOffset) ===
+    //     (mergeMode === 'after')
+    //   ) {
+    //     result = [...result, ...tempResult];
+    //   } else {
+    //     result = [...tempResult, ...result];
+    //   }
+
+    //   prevOffset = currentOffset;
+    // }
+
+    // const hasCurrentPage = cache.resolve(entityKey, fieldName, fieldArgs);
+    // if (hasCurrentPage) {
+    //   return result;
+    // } else if (!(info as any).store.schema) {
+    //   return undefined;
+    // } else {
+    //   info.partial = true;
+    //   return result;
+    // }
+  };
+};
 
 const createUrqlClient = (ssrExchange: any) => ({
   url: 'http://localhost:4000/graphql',
@@ -18,6 +130,15 @@ const createUrqlClient = (ssrExchange: any) => ({
   exchanges: [
     dedupExchange,
     cacheExchange({
+      keys: {
+        PaginatedPosts: () => null,
+      },
+      resolvers: {
+        // pagination
+        Query: {
+          posts: cursorPagination(),
+        },
+      },
       updates: {
         Mutation: {
           login: (_result, args, cache, info) => {
