@@ -31,6 +31,7 @@ export type Mutation = {
   logout: Scalars['Boolean'];
   register: UserResponse;
   updatePost?: Maybe<Post>;
+  vote: Scalars['Boolean'];
 };
 
 
@@ -71,6 +72,12 @@ export type MutationUpdatePostArgs = {
   title?: InputMaybe<Scalars['String']>;
 };
 
+
+export type MutationVoteArgs = {
+  postId: Scalars['Float'];
+  value: Scalars['Float'];
+};
+
 export type PaginatedPosts = {
   __typename?: 'PaginatedPosts';
   hasMore: Scalars['Boolean'];
@@ -81,6 +88,7 @@ export type Post = {
   __typename?: 'Post';
   _id: Scalars['Float'];
   createdAt: Scalars['String'];
+  creator: User;
   creatorId: Scalars['Float'];
   points: Scalars['Float'];
   text: Scalars['String'];
@@ -135,6 +143,8 @@ export type UsernameAndPasswordInputs = {
   username: Scalars['String'];
 };
 
+export type PostSnippetFragment = { __typename?: 'Post', _id: number, createdAt: string, creatorId: number, text: string, title: string, points: number, textSnippet: string, creator: { __typename?: 'User', _id: number, username: string } };
+
 export type RegularErrorFragment = { __typename?: 'FieldError', field: string, message: string };
 
 export type RegularUserFragment = { __typename?: 'User', _id: number, username: string, email: string };
@@ -183,6 +193,14 @@ export type RegisterMutationVariables = Exact<{
 
 export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'UserResponse', errors?: Array<{ __typename?: 'FieldError', field: string, message: string }> | null | undefined, user?: { __typename?: 'User', _id: number, username: string, email: string } | null | undefined } };
 
+export type VoteMutationVariables = Exact<{
+  value: Scalars['Float'];
+  postId: Scalars['Float'];
+}>;
+
+
+export type VoteMutation = { __typename?: 'Mutation', vote: boolean };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -194,8 +212,23 @@ export type PostsQueryVariables = Exact<{
 }>;
 
 
-export type PostsQuery = { __typename?: 'Query', posts: { __typename?: 'PaginatedPosts', hasMore: boolean, posts: Array<{ __typename?: 'Post', _id: number, createdAt: string, creatorId: number, text: string, title: string, textSnippet: string }> } };
+export type PostsQuery = { __typename?: 'Query', posts: { __typename?: 'PaginatedPosts', hasMore: boolean, posts: Array<{ __typename?: 'Post', _id: number, createdAt: string, creatorId: number, text: string, title: string, points: number, textSnippet: string, creator: { __typename?: 'User', _id: number, username: string } }> } };
 
+export const PostSnippetFragmentDoc = gql`
+    fragment PostSnippet on Post {
+  _id
+  createdAt
+  creatorId
+  text
+  title
+  points
+  textSnippet
+  creator {
+    _id
+    username
+  }
+}
+    `;
 export const RegularErrorFragmentDoc = gql`
     fragment RegularError on FieldError {
   field
@@ -288,6 +321,15 @@ export const RegisterDocument = gql`
 export function useRegisterMutation() {
   return Urql.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument);
 };
+export const VoteDocument = gql`
+    mutation Vote($value: Float!, $postId: Float!) {
+  vote(value: $value, postId: $postId)
+}
+    `;
+
+export function useVoteMutation() {
+  return Urql.useMutation<VoteMutation, VoteMutationVariables>(VoteDocument);
+};
 export const MeDocument = gql`
     query Me {
   me {
@@ -304,16 +346,11 @@ export const PostsDocument = gql`
   posts(limit: $limit, cursor: $cursor) {
     hasMore
     posts {
-      _id
-      createdAt
-      creatorId
-      text
-      title
-      textSnippet
+      ...PostSnippet
     }
   }
 }
-    `;
+    ${PostSnippetFragmentDoc}`;
 
 export function usePostsQuery(options: Omit<Urql.UseQueryArgs<PostsQueryVariables>, 'query'> = {}) {
   return Urql.useQuery<PostsQuery>({ query: PostsDocument, ...options });

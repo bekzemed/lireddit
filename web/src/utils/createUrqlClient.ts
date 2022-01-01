@@ -141,6 +141,21 @@ const createUrqlClient = (ssrExchange: any) => ({
       },
       updates: {
         Mutation: {
+          createPost: (_result, args, cache, info) => {
+            // invalidate(make the mutation run again from the beginning set we defined below) create post mutation
+            // https://formidable.com/open-source/urql/docs/graphcache/cache-updates/#invalidating-entities
+            // console.log(cache.inspectFields('Query'));
+
+            // invalidate all paginated posts
+            const allFields = cache.inspectFields('Query');
+            const fieldInfos = allFields.filter(
+              info => info.fieldName === 'posts'
+            );
+
+            fieldInfos.forEach(info => {
+              cache.invalidate('Query', 'posts', info.arguments);
+            });
+          },
           login: (_result, args, cache, info) => {
             betterUpdateQuery<LoginMutation, MeQuery>(
               cache,
