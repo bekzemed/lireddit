@@ -1,0 +1,5 @@
+ssr
+    browser sends cookie to  -> next.js server -> graphql api
+
+client
+    browser sends cookie to  -> graphql api

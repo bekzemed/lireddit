@@ -13,6 +13,7 @@ import { createConnection } from 'typeorm';
 import { Post } from './entities/Post';
 import { User } from './entities/User';
 import path from 'path';
+import { Updoot } from './entities/Updoot';
 
 //
 const main = async () => {
@@ -22,7 +23,7 @@ const main = async () => {
     database: 'lireddit2',
     username: 'postgres',
     password: 'bek',
-    entities: [Post, User],
+    entities: [Post, User, Updoot],
     migrations: [path.join(__dirname, './migrations/*')],
     synchronize: true,
     logging: true,
@@ -73,7 +74,7 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      // origin: 'http://localhost:3000',
+      origin: 'http://localhost:3000',
       credentials: true,
     },
   });

@@ -12,4 +12,4 @@ me -> go to the browser http://localhost:3000
 
 * if one page is SSR(server side rendering) and u navigate to other pages nextjs automatically changes into client side rendering
 
-* to stop one query from running on the server we have to add an object {pause: true}
+* to stop one query from running on the server we have to add an object {pause: true} to the mutation
