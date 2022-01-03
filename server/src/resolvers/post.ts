@@ -47,8 +47,8 @@ export class PostResolver {
   @Mutation(() => Boolean)
   @UseMiddleware(isAuth)
   async vote(
-    @Arg('postId') postId: number,
-    @Arg('value') value: number,
+    @Arg('postId', () => Int) postId: number,
+    @Arg('value', () => Int) value: number,
     @Ctx() { req }: MyContext
   ) {
     const userId = req.session.userId;
@@ -115,7 +115,6 @@ export class PostResolver {
   ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
-    console.log(req.session);
 
     const replacements: any[] = [realLimitPlusOne];
 
@@ -177,8 +176,9 @@ export class PostResolver {
 
   // getting post by id
   @Query(() => Post, { nullable: true })
-  post(@Arg('_id') _id: number): Promise<Post | undefined> {
-    return Post.findOne(_id);
+  post(@Arg('_id', () => Int) _id: number): Promise<Post | undefined> {
+    // realtion join user and post table
+    return Post.findOne(_id, { relations: ['creator'] });
   }
 
   // creating post
@@ -213,12 +213,32 @@ export class PostResolver {
 
   // delete post
   @Mutation(() => Boolean)
-  async deletePost(@Arg('_id') _id: number): Promise<boolean> {
-    try {
-      await Post.delete(_id);
-    } catch {
-      return false;
-    }
+  @UseMiddleware(isAuth)
+  async deletePost(
+    @Arg('_id', () => Int) _id: number,
+    @Ctx() { req }: MyContext
+  ): Promise<boolean> {
+    // not cascade way
+
+    // try {
+    //   const post = await Post.findOne(_id);
+    //   if (!post) {
+    //     return false;
+    //   }
+
+    //   if (post.creatorId !== req.session.userId) {
+    //     throw new Error('not authorized');
+    //   }
+    //   // before deleting the post we have to delete post id found in Updoot table
+    //   // user can delete their own post only
+    //   await Updoot.delete({ postId: _id });
+    //   await Post.delete({ _id });
+    // } catch {
+    //   return false;
+    // }
+
+    // cascade --> deleting corosponding updoot while deleting some posts
+    await Post.delete({ _id, creatorId: req.session.userId });
     return true;
   }
 }

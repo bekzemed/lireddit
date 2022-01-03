@@ -1,8 +1,10 @@
+import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
   Flex,
   Heading,
+  IconButton,
   Link,
   Stack,
   Text,
@@ -12,7 +14,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { UpdootPost } from '../components/UpdootPost';
-import { usePostsQuery } from '../generated/graphql';
+import { useDeletePostMutation, usePostsQuery } from '../generated/graphql';
 import createUrqlClient from '../utils/createUrqlClient';
 
 const Index = () => {
@@ -21,32 +23,43 @@ const Index = () => {
     cursor: null as string | null,
   });
   const [{ data, fetching }] = usePostsQuery({ variables });
+  const [, deletePost] = useDeletePostMutation();
 
   if (!data && !fetching) {
     return <div>you got query failed for some reason</div>;
   }
   return (
     <Layout>
-      <Flex align={'center'} mb={4}>
-        <Heading>LiReddit</Heading>
-        <NextLink href={'/create-post'}>
-          <Link ml={'auto'}>create post</Link>
-        </NextLink>
-      </Flex>
       {!data && fetching ? (
         <div>loading ...</div>
       ) : (
         <Stack spacing={8} mb={4}>
-          {data!.posts.posts.map(p => (
-            <Flex key={p._id} p={5} shadow="md" borderWidth="1px">
-              <UpdootPost post={p} />
-              <Box>
-                <Heading fontSize="xl">{p.title}</Heading>
-                <Text>posted by {p.creator.username}</Text>
-                <Text mt={4}>{p.textSnippet}</Text>
-              </Box>
-            </Flex>
-          ))}
+          {/* after invalidating the post, it will be null so we have to conditionally render it */}
+          {data!.posts.posts.map(p =>
+            !p ? null : (
+              <Flex key={p._id} p={5} shadow="md" borderWidth="1px">
+                <UpdootPost post={p} />
+
+                <Box mr={'auto'}>
+                  <NextLink href="/post/[id]" as={`/post/${p._id}`}>
+                    <Link>
+                      <Heading fontSize="xl">{p.title}</Heading>
+                    </Link>
+                  </NextLink>
+                  <Text>posted by {p.creator.username}</Text>
+                  <Text mt={4}>{p.textSnippet}</Text>
+                </Box>
+                <IconButton
+                  aria-label="Delete Post"
+                  icon={<DeleteIcon />}
+                  colorScheme={'red'}
+                  onClick={() => {
+                    deletePost({ _id: p._id });
+                  }}
+                />
+              </Flex>
+            )
+          )}
         </Stack>
       )}
       {data && data.posts.hasMore && (
