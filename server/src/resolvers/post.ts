@@ -176,9 +176,35 @@ export class PostResolver {
 
   // getting post by id
   @Query(() => Post, { nullable: true })
-  post(@Arg('_id', () => Int) _id: number): Promise<Post | undefined> {
+  async post(@Arg('_id', () => Int) _id: number): Promise<Post | undefined> {
+    // const post = await getConnection()
+    //   .getRepository(Post)
+    //   .createQueryBuilder('post')
+    //   .leftJoinAndSelect('post.creator', 'posts')
+    //   .where('post._id = :id', { id: 269 })
+    //   .getOne();
+
+    // const post = await getConnection().query(
+    //   `
+    //   select * from post p
+    //   inner join public.user u on u._id =  p."creatorId" and p._id = $1,
+    //   json_build_object(
+    //     '_id', u._id,
+    //     'username', u.username,
+    //     'email', u.email,
+    //     'createdAt', u."createdAt",
+    //     'updatedAt', u."updatedAt"
+    //   ) creator
+    // `,
+    //   [_id]
+    // );
+
+    // console.log(post[0]);
+
     // realtion join user and post table
+
     return Post.findOne(_id, { relations: ['creator'] });
+    // return post[0];
   }
 
   // creating post
@@ -196,19 +222,26 @@ export class PostResolver {
 
   // update post
   @Mutation(() => Post, { nullable: true })
+  @UseMiddleware(isAuth)
   async updatePost(
-    @Arg('_id') _id: number,
-    @Arg('title', () => String, { nullable: true }) title: string
+    @Arg('_id', () => Int) _id: number,
+    @Arg('title') title: string,
+    @Arg('text') text: string,
+    @Ctx() { req }: MyContext
   ): Promise<Post | null> {
-    const post = await Post.findOne(_id);
-    if (!post) {
-      return null;
-    }
+    const result = await getConnection()
+      .createQueryBuilder()
+      .update(Post)
+      .set({ title, text })
+      .where('_id = :_id and "creatorId" = :creatorId', {
+        _id,
+        creatorId: req.session.userId,
+      })
+      .returning('*')
+      .execute();
 
-    if (typeof title !== 'undefined') {
-      await Post.update({ _id }, { title });
-    }
-    return post;
+    // await Post.update({ _id, creatorId: req.session.userId }, { title, text });
+    return result.raw[0];
   }
 
   // delete post

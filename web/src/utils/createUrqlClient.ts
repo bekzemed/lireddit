@@ -129,7 +129,7 @@ export const cursorPagination = (): Resolver => {
 const createUrqlClient = (ssrExchange: any, ctx: any) => {
   let cookie = '';
   if (isServer()) {
-    cookie = ctx.req.headers.cookie;
+    cookie = ctx?.req?.headers?.cookie;
   }
 
   return {
@@ -152,6 +152,7 @@ const createUrqlClient = (ssrExchange: any, ctx: any) => {
         },
         updates: {
           Mutation: {
+            // we dont have to invalidate cache for update post because it returs updated post and urql will update it
             deletePost: (_result, args, cache, info) => {
               // invalidating post will result null post
               cache.invalidate({
