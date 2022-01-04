@@ -14,6 +14,8 @@ import { Post } from './entities/Post';
 import { User } from './entities/User';
 import path from 'path';
 import { Updoot } from './entities/Updoot';
+import { createUserLoader } from './utils/createUserLoader';
+import { createUpdootLoader } from './utils/createUpdootLoader';
 
 //
 const main = async () => {
@@ -65,8 +67,15 @@ const main = async () => {
       validate: false,
     }),
 
-    // resolver can get this context value which is datase value
-    context: ({ req, res }) => ({ req, res, redis }),
+    // resolver can get this context value which is database value
+    // runs at every request
+    context: ({ req, res }) => ({
+      req,
+      res,
+      redis,
+      userLoader: createUserLoader(),
+      updootLoader: createUpdootLoader(),
+    }),
   });
 
   await apolloServer.start();
@@ -74,7 +83,7 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      // origin: 'http://localhost:3000',
+      origin: 'http://localhost:3000',
       credentials: true,
     },
   });
