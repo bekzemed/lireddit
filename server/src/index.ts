@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv-safe/config';
 import { COOKIE_NAME, __prod__ } from './constants';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
@@ -22,12 +23,13 @@ const main = async () => {
   // typeorm database connection
   const conn = await createConnection({
     type: 'postgres',
-    database: 'lireddit2',
-    username: 'postgres',
-    password: 'bek',
+    // database: 'lireddit2',
+    // username: 'postgres',
+    // password: 'bek',
+    url: process.env.DATABASE_URL,
     entities: [Post, User, Updoot],
     migrations: [path.join(__dirname, './migrations/*')],
-    synchronize: true,
+    // synchronize: true,
     logging: true,
   });
   await conn.runMigrations();
@@ -40,7 +42,7 @@ const main = async () => {
 
   // connect redis
   const RedisStore = connectRedis(session);
-  const redis = new Redis();
+  const redis = new Redis(process.env.REDIS_URL);
   app.use(
     session({
       name: COOKIE_NAME,
@@ -56,7 +58,7 @@ const main = async () => {
         secure: __prod__, // works only https and in production
       },
       saveUninitialized: false,
-      secret: 'afsfjskjkdjfkajsdfkjsd',
+      secret: process.env.SESSION_SECRET,
       resave: false,
     })
   );
@@ -83,13 +85,13 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      origin: 'http://localhost:3000',
+      origin: process.env.CORS_ORIGIN,
       credentials: true,
     },
   });
 
-  app.listen(4000, () => {
-    console.log('server is started at port 4000');
+  app.listen(parseInt(process.env.PORT), () => {
+    console.log(`server is started at port ${process.env.PORT}`);
   });
 };
 

@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - 4000:4000
+    env_file: .env
+    depends_on:
+      - db
+      - cache
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=bek
+      - POSTGRES_DB=lireddit3
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  cache:
+    image: redis:6.2.6
+    restart: always
+    environment:
+      - REDIS_URL=127.0.0.1
+    ports:
+      - 6379:6379
+    volumes:
+      - cache:/data
+volumes:
+  db-data:
+  cache:
