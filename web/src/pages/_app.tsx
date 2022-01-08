@@ -1,5 +1,6 @@
 import { ChakraProvider, ColorModeProvider } from '@chakra-ui/react';
 import theme from '../theme';
+import { withApollo } from '../utils/withApollo';
 
 function MyApp({ Component, pageProps }: any) {
   return (
@@ -15,4 +16,4 @@ function MyApp({ Component, pageProps }: any) {
   );
 }
 
-export default MyApp;
+export default withApollo({ ssr: false })(MyApp);

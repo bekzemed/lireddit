@@ -4,12 +4,12 @@ import { useMeQuery } from '../generated/graphql';
 
 // custom hook that check whether user is logged in or not
 export const useIsAuth = () => {
-  const [{ data, fetching }] = useMeQuery();
+  const { data, loading } = useMeQuery();
   const router = useRouter();
 
   useEffect(() => {
-    if (!fetching && !data?.me) {
+    if (!loading && !data?.me) {
       router.replace('/login?next=' + router.pathname);
     }
-  }, [data, router, fetching]);
+  }, [data, router, loading]);
 };

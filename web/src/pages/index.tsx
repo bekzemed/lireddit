@@ -7,28 +7,28 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { withUrqlClient } from 'next-urql';
 import NextLink from 'next/link';
-import { useState } from 'react';
 import { EditDeletePostButtons } from '../components/EditDeletePostButtons';
 import { Layout } from '../components/Layout';
 import { UpdootPost } from '../components/UpdootPost';
 import { usePostsQuery } from '../generated/graphql';
-import createUrqlClient from '../utils/createUrqlClient';
+import { withApollo } from '../utils/withApollo';
 
 const Index = () => {
-  const [variables, setVariables] = useState({
-    limit: 10,
-    cursor: null as string | null,
+  const { data, loading, fetchMore, variables } = usePostsQuery({
+    variables: {
+      limit: 10,
+      cursor: null,
+    },
+    notifyOnNetworkStatusChange: true,
   });
-  const [{ data, fetching }] = usePostsQuery({ variables });
 
-  if (!data && !fetching) {
+  if (!data && !loading) {
     return <div>you got query failed for some reason</div>;
   }
   return (
     <Layout>
-      {!data && fetching ? (
+      {!data && loading ? (
         <div>loading ...</div>
       ) : (
         <Stack spacing={8} mb={4}>
@@ -56,13 +56,35 @@ const Index = () => {
       {data && data.posts.hasMore && (
         <Flex>
           <Button
-            onClick={() =>
-              setVariables({
-                limit: variables.limit,
-                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
-              })
-            }
-            isLoading={fetching}
+            onClick={() => {
+              fetchMore({
+                variables: {
+                  limit: variables?.limit,
+                  cursor:
+                    data.posts.posts[data.posts.posts.length - 1].createdAt,
+                },
+                // updateQuery: (
+                //   previousResult,
+                //   { fetchMoreResult }
+                // ): PostsQuery => {
+                //   if (!fetchMoreResult) {
+                //     return previousResult;
+                //   }
+                //   return {
+                //     __typename: 'Query',
+                //     posts: {
+                //       __typename: 'PaginatedPosts',
+                //       hasMore: fetchMoreResult.posts.hasMore,
+                //       posts: [
+                //         ...previousResult.posts.posts,
+                //         ...fetchMoreResult.posts.posts,
+                //       ],
+                //     },
+                //   };
+                // },
+              });
+            }}
+            isLoading={loading}
             mx={'auto'}
             my={8}
             bg={'tan'}
@@ -74,4 +96,4 @@ const Index = () => {
     </Layout>
   );
 };
-export default withUrqlClient(createUrqlClient, { ssr: true })(Index);
+export default withApollo({ ssr: true })(Index);
